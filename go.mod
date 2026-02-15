@@ -7,7 +7,7 @@ require github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.5
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/spf13/cobra v1.10.2
-	k8s.io/apimachinery v0.35.0
+	k8s.io/apimachinery v0.35.1
 	k8s.io/cli-runtime v0.35.0
 )
 
