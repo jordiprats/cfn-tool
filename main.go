@@ -21,6 +21,7 @@ var (
 	nameFilter       string
 	region           string
 	noHeaders        bool
+	namesOnly        bool
 )
 
 func main() {
@@ -39,6 +40,7 @@ func main() {
 	rootCmd.Flags().StringVarP(&nameFilter, "name", "n", "", "Filter stacks containing this string in name")
 	rootCmd.Flags().StringVarP(&region, "region", "r", "", "AWS region (uses default if not specified)")
 	rootCmd.Flags().BoolVar(&noHeaders, "no-headers", false, "Don't print headers")
+	rootCmd.Flags().BoolVarP(&namesOnly, "names-only", "1", false, "Print only stack names, one per line")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -87,7 +89,11 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	printStacks(noHeaders, stacks)
+	if namesOnly {
+		printStackNames(stacks)
+	} else {
+		printStacks(noHeaders, stacks)
+	}
 }
 
 func listStacks(ctx context.Context, client *cloudformation.Client, statusFilters []types.StackStatus, nameFilter string) ([]types.StackSummary, error) {
@@ -180,6 +186,14 @@ func buildStatusFilters(all, complete, deleted, inProgress bool) []types.StackSt
 	}
 
 	return filters
+}
+
+func printStackNames(stacks []types.StackSummary) {
+	for _, stack := range stacks {
+		if stack.StackName != nil {
+			fmt.Println(*stack.StackName)
+		}
+	}
 }
 
 func printStacks(noHeaders bool, stacks []types.StackSummary) {
