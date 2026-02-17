@@ -93,8 +93,8 @@ func run(cmd *cobra.Command, args []string) {
 		printStackNames(stacks)
 	} else {
 		if len(stacks) == 0 && !noHeaders {
-			fmt.Println("No stacks found")
-			return
+			fmt.Fprintf(os.Stderr, "No stacks found\n")
+			os.Exit(1)
 		}
 		printStacks(noHeaders, stacks)
 	}
