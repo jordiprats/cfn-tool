@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -65,34 +66,59 @@ func main() {
 
 func listCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   "list [name-filter]",
 		Short: "List CloudFormation stacks",
-		Run:   runList,
+		Long: `List CloudFormation stacks. By default shows active and in-progress stacks.
+
+A name filter can be provided as a positional argument or via --name.`,
+		Args: cobra.MaximumNArgs(1),
+		Run:  runList,
 	}
 
-	cmd.Flags().BoolVarP(&filterActive, "active", "a", false, "Filter active stacks")
+	cmd.Flags().BoolVarP(&filterAll, "all", "A", false, "Show all stacks (overrides other status filters)")
 	cmd.Flags().BoolVarP(&filterComplete, "complete", "c", false, "Filter complete stacks (*_COMPLETE statuses)")
 	cmd.Flags().BoolVarP(&filterDeleted, "deleted", "d", false, "Filter deleted stacks (DELETE_* statuses)")
 	cmd.Flags().BoolVarP(&filterInProgress, "in-progress", "i", false, "Filter in-progress stacks (*_IN_PROGRESS statuses)")
-	cmd.Flags().StringVarP(&nameFilter, "name", "n", "", "Filter stacks containing this string in name")
+	cmd.Flags().StringVarP(&nameFilter, "name", "n", "", "Filter stacks whose name contains this string (case-insensitive)")
+	cmd.Flags().StringVar(&descContains, "desc", "", "Filter stacks whose description contains this string (case-insensitive)")
+	cmd.Flags().StringVar(&descNotContains, "no-desc", "", "Exclude stacks whose description contains this string (case-insensitive)")
+	cmd.Flags().BoolVarP(&namesOnly, "names-only", "1", false, "Print only stack names, one per line")
 
 	return cmd
 }
 
 func runList(cmd *cobra.Command, args []string) {
+	// Positional arg is a shorthand for --name
+	if len(args) > 0 && nameFilter == "" {
+		nameFilter = args[0]
+	} else if len(args) > 0 && nameFilter != "" {
+		fatalf("Error: name filter specified both as argument and --name flag\n")
+	}
+
 	ctx := context.Background()
 	client := mustClient(ctx)
 
-	statusFilters := buildStatusFilters(filterActive, filterComplete, filterDeleted, filterInProgress)
-	stacks, err := listStacks(ctx, client, statusFilters, nameFilter)
+	statusFilters := buildStatusFilters(filterAll, filterComplete, filterDeleted, filterInProgress)
+	stacks, err := listStacks(ctx, client, statusFilters, nameFilter, descContains, descNotContains)
 	if err != nil {
 		fatalf("failed to list stacks: %v\n", err)
 	}
 
-	if len(stacks) == 0 {
-		fmt.Println("No stacks found")
+	if namesOnly {
+		for _, s := range stacks {
+			if s.StackName != nil {
+				fmt.Println(*s.StackName)
+			}
+		}
 		return
 	}
+
+	if len(stacks) == 0 {
+		fmt.Fprintf(os.Stderr, "No stacks found\n")
+		os.Exit(1)
+	}
+
+	printStacks(noHeaders, stacks)
 }
 
 // ---------------------------------------------------------------------------
@@ -707,7 +733,7 @@ func fatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
-func listStacks(ctx context.Context, client *cloudformation.Client, statusFilters []types.StackStatus, nameFilter string) ([]types.StackSummary, error) {
+func listStacks(ctx context.Context, client *cloudformation.Client, statusFilters []types.StackStatus, nameFilter, descContains, descNotContains string) ([]types.StackSummary, error) {
 	var all []types.StackSummary
 
 	input := &cloudformation.ListStacksInput{}
@@ -721,14 +747,18 @@ func listStacks(ctx context.Context, client *cloudformation.Client, statusFilter
 		if err != nil {
 			return nil, err
 		}
-		if nameFilter != "" {
-			for _, stack := range output.StackSummaries {
-				if stack.StackName != nil && stringContains(*stack.StackName, nameFilter) {
-					all = append(all, stack)
-				}
+		for _, stack := range output.StackSummaries {
+			if nameFilter != "" && (stack.StackName == nil || !strings.Contains(strings.ToLower(*stack.StackName), strings.ToLower(nameFilter))) {
+				continue
 			}
-		} else {
-			all = append(all, output.StackSummaries...)
+			desc := strings.ToLower(getValue(stack.TemplateDescription))
+			if descContains != "" && !strings.Contains(desc, strings.ToLower(descContains)) {
+				continue
+			}
+			if descNotContains != "" && strings.Contains(desc, strings.ToLower(descNotContains)) {
+				continue
+			}
+			all = append(all, stack)
 		}
 	}
 	return all, nil
@@ -755,23 +785,20 @@ func listEvents(ctx context.Context, client *cloudformation.Client, stackName st
 }
 
 func buildStatusFilters(all, complete, deleted, inProgress bool) []types.StackStatus {
-	var filters []types.StackStatus
-
-	if !active && !complete && !deleted && !inProgress {
+	// --all returns nil which means the AWS API default (everything except DELETE_COMPLETE)
+	if all {
 		return nil
 	}
 
-	// If no specific filters are set, default to active + in-progress stacks
+	// No specific flags: default to active + in-progress (most useful day-to-day view)
 	if !complete && !deleted && !inProgress {
-		filters = append(filters,
-			// Active/complete states
+		return []types.StackStatus{
 			types.StackStatusCreateComplete,
 			types.StackStatusUpdateComplete,
 			types.StackStatusRollbackComplete,
 			types.StackStatusUpdateRollbackComplete,
 			types.StackStatusImportComplete,
 			types.StackStatusImportRollbackComplete,
-			// In-progress states
 			types.StackStatusCreateInProgress,
 			types.StackStatusDeleteInProgress,
 			types.StackStatusRollbackInProgress,
@@ -782,9 +809,11 @@ func buildStatusFilters(all, complete, deleted, inProgress bool) []types.StackSt
 			types.StackStatusReviewInProgress,
 			types.StackStatusImportInProgress,
 			types.StackStatusImportRollbackInProgress,
-		)
-		return filters
+		}
 	}
+
+	var filters []types.StackStatus
+
 	if complete {
 		filters = append(filters,
 			types.StackStatusCreateComplete,
@@ -894,13 +923,4 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n-1] + "…"
-}
-
-func stringContains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
