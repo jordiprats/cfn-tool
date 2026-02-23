@@ -41,6 +41,7 @@ func main() {
 
 	rootCmd.PersistentFlags().StringVarP(&region, "region", "r", "", "AWS region (uses default if not specified)")
 	rootCmd.PersistentFlags().BoolVar(&noHeaders, "no-headers", false, "Don't print headers")
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	rootCmd.AddCommand(
 		listCmd(),
@@ -455,7 +456,7 @@ func printDriftResults(ctx context.Context, client *cloudformation.Client, stack
 	// List drifted resources
 	var drifted []types.StackResourceDrift
 	paginator := cloudformation.NewDescribeStackResourceDriftsPaginator(client, &cloudformation.DescribeStackResourceDriftsInput{
-		StackName:                   &stackName,
+		StackName: &stackName,
 		StackResourceDriftStatusFilters: []types.StackResourceDriftStatus{
 			types.StackResourceDriftStatusModified,
 			types.StackResourceDriftStatusDeleted,
