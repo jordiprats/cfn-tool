@@ -18,6 +18,7 @@ var (
 	filterComplete   bool
 	filterDeleted    bool
 	filterInProgress bool
+	ignoreCase       bool
 	nameFilter       string
 	descContains     string
 	descNotContains  string
@@ -58,11 +59,12 @@ Examples:
 	}
 
 	cmd.Flags().BoolVarP(&filterAll, "all", "A", false, "Show all stacks (overrides other status filters)")
-	cmd.Flags().BoolVarP(&filterComplete, "complete", "c", false, "Filter complete stacks (*_COMPLETE statuses)")
-	cmd.Flags().BoolVarP(&filterDeleted, "deleted", "d", false, "Filter deleted stacks (DELETE_* statuses)")
-	cmd.Flags().BoolVarP(&filterInProgress, "in-progress", "i", false, "Filter in-progress stacks (*_IN_PROGRESS statuses)")
-	cmd.Flags().StringVar(&descContains, "desc", "", "Filter stacks whose description contains this string (case-insensitive)")
-	cmd.Flags().StringVar(&descNotContains, "no-desc", "", "Exclude stacks whose description contains this string (case-insensitive)")
+	cmd.Flags().BoolVarP(&filterComplete, "complete", "C", false, "Filter complete stacks (*_COMPLETE statuses)")
+	cmd.Flags().BoolVarP(&filterDeleted, "deleted", "D", false, "Filter deleted stacks (DELETE_* statuses)")
+	cmd.Flags().BoolVarP(&filterInProgress, "in-progress", "P", false, "Filter in-progress stacks (*_IN_PROGRESS statuses)")
+	cmd.Flags().BoolVarP(&ignoreCase, "ignore-case", "i", false, "Use case-insensitive matching for text filters")
+	cmd.Flags().StringVar(&descContains, "desc", "", "Filter stacks whose description contains this string")
+	cmd.Flags().StringVar(&descNotContains, "no-desc", "", "Exclude stacks whose description contains this string")
 	cmd.Flags().BoolVarP(&namesOnly, "names-only", "1", false, "Print only stack names, one per line")
 	cmd.Flags().StringVarP(&resourceType, "type", "t", "", "Search for resource type (e.g., AWS::S3::Bucket)")
 	cmd.Flags().StringVarP(&resourceName, "resource-name", "n", "", "Search for resource logical ID")
@@ -90,7 +92,7 @@ func runList(cmd *cobra.Command, args []string) {
 		statusFilters = nil
 	}
 
-	stacks, err := listStacks(ctx, client, statusFilters, nameFilter, descContains, descNotContains)
+	stacks, err := listStacks(ctx, client, statusFilters, nameFilter, descContains, descNotContains, ignoreCase)
 	if err != nil {
 		fatalf("failed to list stacks: %v\n", err)
 	}
@@ -162,7 +164,7 @@ func runResourceSearch(ctx context.Context, client *cloudformation.Client, stack
 			continue
 		}
 
-		hasMatch, err := searchStackTemplate(ctx, client, *stack.StackName, resourceType, resourceName, propertyFilters)
+		hasMatch, err := searchStackTemplate(ctx, client, *stack.StackName, resourceType, resourceName, propertyFilters, ignoreCase)
 		if err != nil {
 			// Skip stacks we can't access
 			continue
@@ -211,7 +213,7 @@ func runResourceSearch(ctx context.Context, client *cloudformation.Client, stack
 	}
 }
 
-func searchStackTemplate(ctx context.Context, client *cloudformation.Client, stackName, resType, resName string, propertyFilters map[string]string) (bool, error) {
+func searchStackTemplate(ctx context.Context, client *cloudformation.Client, stackName, resType, resName string, propertyFilters map[string]string, ignoreCase bool) (bool, error) {
 	// Get template
 	output, err := client.GetTemplate(ctx, &cloudformation.GetTemplateInput{
 		StackName:     &stackName,
@@ -243,7 +245,7 @@ func searchStackTemplate(ctx context.Context, client *cloudformation.Client, sta
 
 	for logicalID, resourceData := range resources {
 		// Check resource name first (cheapest check) if specified
-		if resName != "" && !strings.Contains(logicalID, resName) {
+		if resName != "" && !containsWithCase(logicalID, resName, ignoreCase) {
 			continue
 		}
 
@@ -255,7 +257,7 @@ func searchStackTemplate(ctx context.Context, client *cloudformation.Client, sta
 		// Check resource type second if specified
 		if resType != "" {
 			currentType, ok := resourceMap["Type"].(string)
-			if !ok || currentType != resType {
+			if !ok || !equalsWithCase(currentType, resType, ignoreCase) {
 				continue
 			}
 		}
@@ -267,7 +269,7 @@ func searchStackTemplate(ctx context.Context, client *cloudformation.Client, sta
 				continue
 			}
 
-			matched, _ := checkProperties(properties, propertyFilters)
+			matched, _ := checkProperties(properties, propertyFilters, ignoreCase)
 			if !matched {
 				continue
 			}
@@ -280,19 +282,19 @@ func searchStackTemplate(ctx context.Context, client *cloudformation.Client, sta
 	return false, nil
 }
 
-func checkProperties(properties map[string]interface{}, filters map[string]string) (bool, map[string]interface{}) {
+func checkProperties(properties map[string]interface{}, filters map[string]string, ignoreCase bool) (bool, map[string]interface{}) {
 	matchedProps := make(map[string]interface{})
 
 	for key, expectedValue := range filters {
 		// Handle nested properties (e.g., "Versioning.Status")
-		value := getNestedProperty(properties, key)
+		value := getNestedProperty(properties, key, ignoreCase)
 		if value == nil {
 			return false, nil
 		}
 
 		// Convert value to string for comparison
 		valueStr := fmt.Sprintf("%v", value)
-		if valueStr != expectedValue {
+		if !equalsWithCase(valueStr, expectedValue, ignoreCase) {
 			return false, nil
 		}
 
@@ -302,7 +304,7 @@ func checkProperties(properties map[string]interface{}, filters map[string]strin
 	return true, matchedProps
 }
 
-func getNestedProperty(properties map[string]interface{}, path string) interface{} {
+func getNestedProperty(properties map[string]interface{}, path string, ignoreCase bool) interface{} {
 	parts := strings.Split(path, ".")
 	var current interface{} = properties
 
@@ -310,6 +312,21 @@ func getNestedProperty(properties map[string]interface{}, path string) interface
 		currentMap, ok := current.(map[string]interface{})
 		if !ok {
 			return nil
+		}
+
+		if ignoreCase {
+			found := false
+			for key, value := range currentMap {
+				if strings.EqualFold(key, part) {
+					current = value
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil
+			}
+			continue
 		}
 
 		val, exists := currentMap[part]

@@ -42,7 +42,7 @@ func fatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
-func listStacks(ctx context.Context, client *cloudformation.Client, statusFilters []types.StackStatus, nameFilter, descContains, descNotContains string) ([]types.StackSummary, error) {
+func listStacks(ctx context.Context, client *cloudformation.Client, statusFilters []types.StackStatus, nameFilter, descContains, descNotContains string, ignoreCase bool) ([]types.StackSummary, error) {
 	var all []types.StackSummary
 
 	input := &cloudformation.ListStacksInput{}
@@ -57,20 +57,34 @@ func listStacks(ctx context.Context, client *cloudformation.Client, statusFilter
 			return nil, err
 		}
 		for _, stack := range output.StackSummaries {
-			if nameFilter != "" && (stack.StackName == nil || !strings.Contains(strings.ToLower(*stack.StackName), strings.ToLower(nameFilter))) {
+			if nameFilter != "" && (stack.StackName == nil || !containsWithCase(*stack.StackName, nameFilter, ignoreCase)) {
 				continue
 			}
-			desc := strings.ToLower(getValue(stack.TemplateDescription))
-			if descContains != "" && !strings.Contains(desc, strings.ToLower(descContains)) {
+			desc := getValue(stack.TemplateDescription)
+			if descContains != "" && !containsWithCase(desc, descContains, ignoreCase) {
 				continue
 			}
-			if descNotContains != "" && strings.Contains(desc, strings.ToLower(descNotContains)) {
+			if descNotContains != "" && containsWithCase(desc, descNotContains, ignoreCase) {
 				continue
 			}
 			all = append(all, stack)
 		}
 	}
 	return all, nil
+}
+
+func containsWithCase(haystack, needle string, ignoreCase bool) bool {
+	if ignoreCase {
+		return strings.Contains(strings.ToLower(haystack), strings.ToLower(needle))
+	}
+	return strings.Contains(haystack, needle)
+}
+
+func equalsWithCase(left, right string, ignoreCase bool) bool {
+	if ignoreCase {
+		return strings.EqualFold(left, right)
+	}
+	return left == right
 }
 
 func listEvents(ctx context.Context, client *cloudformation.Client, stackName string, limit int) ([]types.StackEvent, error) {

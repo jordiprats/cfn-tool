@@ -35,13 +35,14 @@ cfn list [name-filter] [flags]
 
 ```
   -A, --all                    Show all stacks (overrides other status filters)
-  -c, --complete               Filter complete stacks (*_COMPLETE statuses)
-  -d, --deleted                Filter deleted stacks (DELETE_* statuses)
-      --desc string            Filter stacks whose description contains this string (case-insensitive)
+  -C, --complete               Filter complete stacks (*_COMPLETE statuses)
+  -D, --deleted                Filter deleted stacks (DELETE_* statuses)
+      --desc string            Filter stacks whose description contains this string
   -h, --help                   help for list
-  -i, --in-progress            Filter in-progress stacks (*_IN_PROGRESS statuses)
+  -i, --ignore-case            Use case-insensitive matching for text filters
+  -P, --in-progress            Filter in-progress stacks (*_IN_PROGRESS statuses)
   -1, --names-only             Print only stack names, one per line
-      --no-desc string         Exclude stacks whose description contains this string (case-insensitive)
+      --no-desc string         Exclude stacks whose description contains this string
   -p, --property stringArray   Search for resource property (format: key=value or nested.key=value)
   -n, --resource-name string   Search for resource logical ID
   -t, --type string            Search for resource type (e.g., AWS::S3::Bucket)

@@ -10,7 +10,7 @@ cfn tail <stack-name> [flags]
 
 ```
   -h, --help           help for tail
-  -i, --interval int   Polling interval in seconds (default 5)
+  -s, --interval int   Polling interval in seconds (default 5)
 ```
 
 ### Options inherited from parent commands

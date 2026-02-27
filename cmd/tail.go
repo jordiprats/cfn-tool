@@ -25,7 +25,7 @@ func TailCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVarP(&interval, "interval", "i", 5, "Polling interval in seconds")
+	cmd.Flags().IntVarP(&interval, "interval", "s", 5, "Polling interval in seconds")
 
 	return cmd
 }
