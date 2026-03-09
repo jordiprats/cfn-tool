@@ -52,7 +52,15 @@ func runDescribe(stackName string) {
 	if stack.Description != nil {
 		fmt.Printf("Description:           %s\n", *stack.Description)
 	}
-	fmt.Printf("Termination Protected: %v\n", stack.EnableTerminationProtection)
+	if stack.EnableTerminationProtection != nil {
+		if *stack.EnableTerminationProtection {
+			fmt.Printf("Termination Protected: Yes\n")
+		} else {
+			fmt.Printf("Termination Protected: No\n")
+		}
+	} else {
+		fmt.Printf("Termination Protected: Unknown\n")
+	}
 	if stack.RoleARN != nil {
 		fmt.Printf("IAM Role:              %s\n", *stack.RoleARN)
 	}
