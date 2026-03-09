@@ -12,9 +12,10 @@ import (
 
 func ResourcesCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "resources <stack-name>",
-		Short: "List physical resources in a CloudFormation stack",
-		Args:  cobra.ExactArgs(1),
+		Use:     "resources <stack-name>",
+		Aliases: []string{"res"},
+		Short:   "List physical resources in a CloudFormation stack",
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			runResources(args[0])
 		},
