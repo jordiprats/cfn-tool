@@ -11,9 +11,10 @@ import (
 
 func OutputsCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "outputs <stack-name>",
-		Short: "Show outputs for a CloudFormation stack",
-		Args:  cobra.ExactArgs(1),
+		Use:     "outputs <stack-name>",
+		Aliases: []string{"out"},
+		Short:   "Show outputs for a CloudFormation stack",
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			runOutputs(args[0])
 		},

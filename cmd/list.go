@@ -30,8 +30,9 @@ var (
 
 func ListCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list [name-filter]",
-		Short: "List CloudFormation stacks",
+		Use:     "list [name-filter]",
+		Aliases: []string{"ls"},
+		Short:   "List CloudFormation stacks",
 		Long: `List CloudFormation stacks. By default shows active and in-progress stacks.
 
 A name filter can be provided as a positional argument.
