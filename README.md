@@ -7,6 +7,7 @@ A user-friendly command-line tool for inspecting and managing AWS CloudFormation
 - 📋 **List stacks** with flexible filtering options
 - 🔍 **Search templates** by resource type and properties
 - 📊 **View stack details** including parameters, outputs, tags, and resources
+- 🗑️ **Delete stacks** safely with confirmation and optional wait
 - 🔄 **Monitor events** in real-time with tail functionality
 - 🔎 **Detect drift** and view detailed drift information
 - ✅ **Validate templates** before deployment
@@ -69,6 +70,16 @@ View comprehensive stack information. [Documentation](./docs/cfn_describe.md)
 
 ```bash
 cfn describe my-stack             # Full details including parameters, outputs, tags
+```
+
+### `cfn delete` - Delete Stack
+
+Delete a stack safely with confirmation and optional wait. [Documentation](./docs/cfn_delete.md)
+
+```bash
+cfn delete my-stack               # Confirm and wait for completion
+cfn delete my-stack --yes         # Non-interactive (script-friendly)
+cfn delete my-stack --wait=false  # Trigger delete and return immediately
 ```
 
 ### `cfn events` - Stack Events
@@ -164,6 +175,14 @@ cfn list --names-only | while read stack; do
 done
 ```
 
+**Bulk delete stacks (non-interactive):**
+```bash
+# Delete stacks whose name contains "preview"
+cfn list preview --names-only | while read stack; do
+  cfn delete "$stack" --yes
+done
+```
+
 ## Full Documentation
 
 ### `cfn` - Main Command
@@ -177,6 +196,10 @@ List CloudFormation stacks with filtering options, including deep search by reso
 ### `cfn describe` - Stack Details
 
 View comprehensive stack information. [Documentation](./docs/cfn_describe.md)
+
+### `cfn delete` - Delete Stack
+
+Delete stacks with confirmation and optional wait behavior. [Documentation](./docs/cfn_delete.md)
 
 ### `cfn events` - Stack Events
 

@@ -16,6 +16,7 @@ Inspect and manage AWS CloudFormation stacks
 
 ### SEE ALSO
 
+* [cfn delete](cfn_delete.md)	 - Delete a CloudFormation stack
 * [cfn describe](cfn_describe.md)	 - Show full metadata for a CloudFormation stack
 * [cfn drift](cfn_drift.md)	 - Detect and show drift for a CloudFormation stack
 * [cfn events](cfn_events.md)	 - List events for a CloudFormation stack

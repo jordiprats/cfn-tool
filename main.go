@@ -29,6 +29,7 @@ func main() {
 
 	rootCmd.AddCommand(
 		cmd.ListCmd(),
+		cmd.DeleteCmd(),
 		cmd.EventsCmd(),
 		cmd.DescribeCmd(),
 		cmd.OutputsCmd(),
