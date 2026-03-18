@@ -13,7 +13,7 @@ import (
 func DescribeCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "describe <stack-name>",
-		Aliases: []string{"desc"},
+		Aliases: []string{"desc", "des"},
 		Short:   "Show full metadata for a CloudFormation stack",
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
