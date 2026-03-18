@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cloudcontrol"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +36,19 @@ func mustClient(ctx context.Context) *cloudformation.Client {
 		fatalf("failed to load AWS config: %v\n", err)
 	}
 	return cloudformation.NewFromConfig(cfg)
+}
+
+func mustCloudControlClient(ctx context.Context) *cloudcontrol.Client {
+	cfg, err := config.LoadDefaultConfig(ctx, func(opts *config.LoadOptions) error {
+		if region != "" {
+			opts.Region = region
+		}
+		return nil
+	})
+	if err != nil {
+		fatalf("failed to load AWS config: %v\n", err)
+	}
+	return cloudcontrol.NewFromConfig(cfg)
 }
 
 func fatalf(format string, args ...any) {
