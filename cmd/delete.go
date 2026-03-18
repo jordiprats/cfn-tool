@@ -67,13 +67,19 @@ Examples:
 }
 
 func runDelete(stackName string, yes bool, wait bool, retainResources []string, cloudcontrolDelete bool, dryRun bool) {
-	if dryRun {
-		cloudcontrolDelete = true
+	if dryRun && !cloudcontrolDelete {
+		fatalf("--dry-run requires --cloudcontrol-delete\n")
 	}
 
 	if !dryRun && !yes {
-		if !confirmDelete(stackName) {
-			fatalf("aborted\n")
+		if cloudcontrolDelete {
+			if !confirmDelete(fmt.Sprintf("%s (resources will be deleted via Cloud Control first)", stackName)) {
+				fatalf("aborted\n")
+			}
+		} else {
+			if !confirmDelete(stackName) {
+				fatalf("aborted\n")
+			}
 		}
 	}
 
