@@ -33,6 +33,7 @@ func main() {
 		cmd.EventsCmd(),
 		cmd.DescribeCmd(),
 		cmd.OutputsCmd(),
+		cmd.ParametersCmd(),
 		cmd.ResourcesCmd(),
 		cmd.DriftCmd(),
 		cmd.TailCmd(),
