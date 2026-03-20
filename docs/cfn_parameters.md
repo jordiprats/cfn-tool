@@ -1,17 +1,15 @@
-## cfn events
+## cfn parameters
 
-List events for a CloudFormation stack
+Show parameters for a CloudFormation stack
 
 ```
-cfn events <stack-name> [flags]
+cfn parameters <stack-name> [flags]
 ```
 
 ### Options
 
 ```
-  -f, --failed      Show only failure events (root cause analysis)
-  -h, --help        help for events
-  -l, --limit int   Maximum number of events to show (0 = all)
+  -h, --help   help for parameters
 ```
 
 ### Options inherited from parent commands

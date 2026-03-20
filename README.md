@@ -89,6 +89,7 @@ List stack events. [Documentation](./docs/cfn_events.md)
 ```bash
 cfn events my-stack               # All events
 cfn events my-stack --limit 10    # Last 10 events
+cfn events my-stack --failed      # Show only failure events (root cause analysis)
 ```
 
 ### `cfn tail` - Stream Events
@@ -98,6 +99,14 @@ Monitor stack events in real-time. [Documentation](./docs/cfn_tail.md)
 ```bash
 cfn tail my-stack                 # Default 5-second interval
 cfn tail my-stack --interval 10   # Custom interval
+```
+
+### `cfn parameters` - Stack Parameters
+
+Show stack parameters. [Documentation](./docs/cfn_parameters.md)
+
+```bash
+cfn parameters my-stack
 ```
 
 ### `cfn outputs` - Stack Outputs
@@ -203,11 +212,15 @@ Delete stacks with confirmation and optional wait behavior. [Documentation](./do
 
 ### `cfn events` - Stack Events
 
-List stack events. [Documentation](./docs/cfn_events.md)
+List stack events with optional failure filtering. [Documentation](./docs/cfn_events.md)
 
 ### `cfn tail` - Stream Events
 
 Monitor stack events in real-time. [Documentation](./docs/cfn_tail.md)
+
+### `cfn parameters` - Stack Parameters
+
+Show stack parameters. [Documentation](./docs/cfn_parameters.md)
 
 ### `cfn outputs` - Stack Outputs
 

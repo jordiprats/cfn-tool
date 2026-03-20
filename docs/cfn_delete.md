@@ -21,6 +21,12 @@ Examples:
   # Keep specific resources during stack deletion
   cfn delete my-stack --retain-resource MyBucket --retain-resource MyLogGroup
 
+  # Delete resources via Cloud Control API before deleting the stack
+  cfn delete my-stack --cloudcontrol-delete
+
+  # Preview what --cloudcontrol-delete would do without making changes
+  cfn delete my-stack --cloudcontrol-delete --dry-run
+
 ```
 cfn delete <stack-name> [flags]
 ```
@@ -28,6 +34,8 @@ cfn delete <stack-name> [flags]
 ### Options
 
 ```
+      --cloudcontrol-delete           Delete resources via Cloud Control API before deleting the stack
+      --dry-run                       Show what --cloudcontrol-delete would do without making changes
   -h, --help                          help for delete
       --retain-resource stringArray   Logical resource ID to retain during deletion (repeatable)
   -w, --wait                          Wait for stack deletion to complete (default true)

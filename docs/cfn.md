@@ -22,6 +22,7 @@ Inspect and manage AWS CloudFormation stacks
 * [cfn events](cfn_events.md)	 - List events for a CloudFormation stack
 * [cfn list](cfn_list.md)	 - List CloudFormation stacks
 * [cfn outputs](cfn_outputs.md)	 - Show outputs for a CloudFormation stack
+* [cfn parameters](cfn_parameters.md)	 - Show parameters for a CloudFormation stack
 * [cfn resources](cfn_resources.md)	 - List physical resources in a CloudFormation stack
 * [cfn tail](cfn_tail.md)	 - Stream stack events in real time (Ctrl-C to stop)
 * [cfn template](cfn_template.md)	 - Fetch and print the deployed template for a stack
