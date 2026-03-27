@@ -5,7 +5,7 @@ go 1.25.0
 require github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.5
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.41.4
+	github.com/aws/aws-sdk-go-v2 v1.41.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.10
 	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.29.12
 	github.com/aws/smithy-go v1.24.2
