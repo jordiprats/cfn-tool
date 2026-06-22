@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
@@ -23,6 +24,7 @@ var (
 	descContains     string
 	descNotContains  string
 	namesOnly        bool
+	sortUpdated      bool
 	resourceType     string
 	resourceName     string
 	properties       []string
@@ -67,6 +69,7 @@ Examples:
 	cmd.Flags().StringVar(&descContains, "desc", "", "Filter stacks whose description contains this string")
 	cmd.Flags().StringVar(&descNotContains, "no-desc", "", "Exclude stacks whose description contains this string")
 	cmd.Flags().BoolVarP(&namesOnly, "names-only", "1", false, "Print only stack names, one per line")
+	cmd.Flags().BoolVarP(&sortUpdated, "sort-updated", "u", false, "Sort by last updated time (most recent first)")
 	cmd.Flags().StringVarP(&resourceType, "type", "t", "", "Search for resource type (e.g., AWS::S3::Bucket)")
 	cmd.Flags().StringVarP(&resourceName, "resource-name", "n", "", "Search for resource logical ID")
 	cmd.Flags().StringArrayVarP(&properties, "property", "p", []string{}, "Search for resource property (format: key=value or nested.key=value)")
@@ -98,6 +101,14 @@ func runList(cmd *cobra.Command, args []string) {
 		fatalf("failed to list stacks: %v\n", err)
 	}
 
+	if sortUpdated {
+		sort.Slice(stacks, func(i, j int) bool {
+			ti := stackLastUpdated(stacks[i])
+			tj := stackLastUpdated(stacks[j])
+			return ti.After(tj)
+		})
+	}
+
 	if isResourceSearch {
 		runResourceSearch(ctx, client, stacks, namesOnly)
 		return
@@ -117,7 +128,7 @@ func runList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printStacks(noHeaders, stacks)
+	printStacks(noHeaders, stacks, sortUpdated)
 }
 
 func runResourceSearch(ctx context.Context, client *cloudformation.Client, stacks []types.StackSummary, namesOnly bool) {
@@ -210,7 +221,7 @@ func runResourceSearch(ctx context.Context, client *cloudformation.Client, stack
 			}
 		}
 	} else {
-		printStacks(noHeaders, matchingStackSummaries)
+		printStacks(noHeaders, matchingStackSummaries, sortUpdated)
 	}
 }
 

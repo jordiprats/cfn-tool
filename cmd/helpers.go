@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudcontrol"
@@ -203,11 +204,30 @@ func mustPrint(table *v1.Table) {
 	}
 }
 
-func printStacks(noHdrs bool, stacks []types.StackSummary) {
-	table := makeTable([]string{"NAME", "STATUS", "CREATED", "DESCRIPTION"})
+func stackLastUpdated(stack types.StackSummary) time.Time {
+	if stack.LastUpdatedTime != nil {
+		return *stack.LastUpdatedTime
+	}
+	if stack.CreationTime != nil {
+		return *stack.CreationTime
+	}
+	return time.Time{}
+}
+
+func printStacks(noHdrs bool, stacks []types.StackSummary, showUpdated bool) {
+	columns := []string{"NAME", "STATUS", "CREATED", "DESCRIPTION"}
+	if showUpdated {
+		columns = []string{"NAME", "STATUS", "UPDATED", "DESCRIPTION"}
+	}
+	table := makeTable(columns)
 	for _, stack := range stacks {
 		ts := ""
-		if stack.CreationTime != nil {
+		if showUpdated {
+			t := stackLastUpdated(stack)
+			if !t.IsZero() {
+				ts = t.Format("2006-01-02 15:04:05")
+			}
+		} else if stack.CreationTime != nil {
 			ts = stack.CreationTime.Format("2006-01-02 15:04:05")
 		}
 		table.Rows = append(table.Rows, v1.TableRow{
