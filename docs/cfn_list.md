@@ -45,6 +45,7 @@ cfn list [name-filter] [flags]
       --no-desc string         Exclude stacks whose description contains this string
   -p, --property stringArray   Search for resource property (format: key=value or nested.key=value)
   -n, --resource-name string   Search for resource logical ID
+  -u, --sort-updated           Sort by last updated time (most recent first)
   -t, --type string            Search for resource type (e.g., AWS::S3::Bucket)
 ```
 

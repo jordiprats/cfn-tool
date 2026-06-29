@@ -128,7 +128,7 @@ func buildStatusFilters(all, complete, deleted, inProgress bool) []types.StackSt
 		return nil
 	}
 
-	// No specific flags: default to active + in-progress (most useful day-to-day view)
+	// No specific flags: default to active + in-progress + failed (most useful day-to-day view)
 	if !complete && !deleted && !inProgress {
 		return []types.StackStatus{
 			types.StackStatusCreateComplete,
@@ -147,6 +147,12 @@ func buildStatusFilters(all, complete, deleted, inProgress bool) []types.StackSt
 			types.StackStatusReviewInProgress,
 			types.StackStatusImportInProgress,
 			types.StackStatusImportRollbackInProgress,
+			types.StackStatusCreateFailed,
+			types.StackStatusRollbackFailed,
+			types.StackStatusDeleteFailed,
+			types.StackStatusUpdateFailed,
+			types.StackStatusUpdateRollbackFailed,
+			types.StackStatusImportRollbackFailed,
 		}
 	}
 
