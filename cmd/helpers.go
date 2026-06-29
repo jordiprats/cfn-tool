@@ -122,10 +122,59 @@ func listEvents(ctx context.Context, client *cloudformation.Client, stackName st
 	return all, nil
 }
 
-func buildStatusFilters(all, complete, deleted, inProgress, failed bool) []types.StackStatus {
+func buildStatusFilters(all, complete, deleted, inProgress, failed, rollback bool) []types.StackStatus {
 	// --all returns nil which means the AWS API default (everything except DELETE_COMPLETE)
 	if all {
 		return nil
+	}
+
+	// --rollback alone shows all rollback statuses; combined with -F/-C/-P narrows to intersection
+	if rollback {
+		if !complete && !deleted && !inProgress && !failed {
+			return []types.StackStatus{
+				types.StackStatusRollbackComplete,
+				types.StackStatusRollbackFailed,
+				types.StackStatusRollbackInProgress,
+				types.StackStatusUpdateRollbackComplete,
+				types.StackStatusUpdateRollbackFailed,
+				types.StackStatusUpdateRollbackInProgress,
+				types.StackStatusUpdateRollbackCompleteCleanupInProgress,
+				types.StackStatusImportRollbackComplete,
+				types.StackStatusImportRollbackFailed,
+				types.StackStatusImportRollbackInProgress,
+			}
+		}
+		var filters []types.StackStatus
+		if failed {
+			filters = append(filters,
+				types.StackStatusRollbackFailed,
+				types.StackStatusUpdateRollbackFailed,
+				types.StackStatusImportRollbackFailed,
+			)
+		}
+		if complete {
+			filters = append(filters,
+				types.StackStatusRollbackComplete,
+				types.StackStatusUpdateRollbackComplete,
+				types.StackStatusImportRollbackComplete,
+			)
+		}
+		if inProgress {
+			filters = append(filters,
+				types.StackStatusRollbackInProgress,
+				types.StackStatusUpdateRollbackInProgress,
+				types.StackStatusUpdateRollbackCompleteCleanupInProgress,
+				types.StackStatusImportRollbackInProgress,
+			)
+		}
+		if deleted {
+			filters = append(filters,
+				types.StackStatusDeleteInProgress,
+				types.StackStatusDeleteFailed,
+				types.StackStatusDeleteComplete,
+			)
+		}
+		return filters
 	}
 
 	// No specific flags: default to active + in-progress + failed (most useful day-to-day view)

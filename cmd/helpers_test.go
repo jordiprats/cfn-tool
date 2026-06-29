@@ -73,14 +73,14 @@ func TestEqualsWithCase(t *testing.T) {
 }
 
 func TestBuildStatusFilters_All(t *testing.T) {
-	filters := buildStatusFilters(true, false, false, false, false)
+	filters := buildStatusFilters(true, false, false, false, false, false)
 	if filters != nil {
 		t.Errorf("--all should return nil, got %v", filters)
 	}
 }
 
 func TestBuildStatusFilters_Default(t *testing.T) {
-	filters := buildStatusFilters(false, false, false, false, false)
+	filters := buildStatusFilters(false, false, false, false, false, false)
 	if len(filters) == 0 {
 		t.Error("default should return non-empty filters")
 	}
@@ -92,7 +92,7 @@ func TestBuildStatusFilters_Default(t *testing.T) {
 }
 
 func TestBuildStatusFilters_Complete(t *testing.T) {
-	filters := buildStatusFilters(false, true, false, false, false)
+	filters := buildStatusFilters(false, true, false, false, false, false)
 	found := false
 	for _, f := range filters {
 		if f == types.StackStatusDeleteComplete {
@@ -105,7 +105,7 @@ func TestBuildStatusFilters_Complete(t *testing.T) {
 }
 
 func TestBuildStatusFilters_Deleted(t *testing.T) {
-	filters := buildStatusFilters(false, false, true, false, false)
+	filters := buildStatusFilters(false, false, true, false, false, false)
 	found := false
 	for _, f := range filters {
 		if f == types.StackStatusDeleteComplete {
@@ -118,7 +118,7 @@ func TestBuildStatusFilters_Deleted(t *testing.T) {
 }
 
 func TestBuildStatusFilters_InProgress(t *testing.T) {
-	filters := buildStatusFilters(false, false, false, true, false)
+	filters := buildStatusFilters(false, false, false, true, false, false)
 	found := false
 	for _, f := range filters {
 		if f == types.StackStatusCreateInProgress {
@@ -131,7 +131,7 @@ func TestBuildStatusFilters_InProgress(t *testing.T) {
 }
 
 func TestBuildStatusFilters_Failed(t *testing.T) {
-	filters := buildStatusFilters(false, false, false, false, true)
+	filters := buildStatusFilters(false, false, false, false, true, false)
 	found := false
 	for _, f := range filters {
 		if f == types.StackStatusUpdateRollbackFailed {
@@ -140,5 +140,39 @@ func TestBuildStatusFilters_Failed(t *testing.T) {
 	}
 	if !found {
 		t.Error("--failed should include UPDATE_ROLLBACK_FAILED")
+	}
+}
+
+func TestBuildStatusFilters_Rollback(t *testing.T) {
+	filters := buildStatusFilters(false, false, false, false, false, true)
+	if len(filters) == 0 {
+		t.Error("--rollback should return non-empty filters")
+	}
+	found := false
+	for _, f := range filters {
+		if f == types.StackStatusUpdateRollbackFailed {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("--rollback should include UPDATE_ROLLBACK_FAILED")
+	}
+}
+
+func TestBuildStatusFilters_RollbackFailed(t *testing.T) {
+	filters := buildStatusFilters(false, false, false, false, true, true)
+	for _, f := range filters {
+		if f == types.StackStatusUpdateRollbackComplete {
+			t.Error("--rollback --failed should NOT include UPDATE_ROLLBACK_COMPLETE")
+		}
+	}
+	found := false
+	for _, f := range filters {
+		if f == types.StackStatusUpdateRollbackFailed {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("--rollback --failed should include UPDATE_ROLLBACK_FAILED")
 	}
 }
