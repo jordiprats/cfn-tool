@@ -122,14 +122,14 @@ func listEvents(ctx context.Context, client *cloudformation.Client, stackName st
 	return all, nil
 }
 
-func buildStatusFilters(all, complete, deleted, inProgress bool) []types.StackStatus {
+func buildStatusFilters(all, complete, deleted, inProgress, failed bool) []types.StackStatus {
 	// --all returns nil which means the AWS API default (everything except DELETE_COMPLETE)
 	if all {
 		return nil
 	}
 
 	// No specific flags: default to active + in-progress + failed (most useful day-to-day view)
-	if !complete && !deleted && !inProgress {
+	if !complete && !deleted && !inProgress && !failed {
 		return []types.StackStatus{
 			types.StackStatusCreateComplete,
 			types.StackStatusUpdateComplete,
@@ -188,6 +188,16 @@ func buildStatusFilters(all, complete, deleted, inProgress bool) []types.StackSt
 			types.StackStatusReviewInProgress,
 			types.StackStatusImportInProgress,
 			types.StackStatusImportRollbackInProgress,
+		)
+	}
+	if failed {
+		filters = append(filters,
+			types.StackStatusCreateFailed,
+			types.StackStatusRollbackFailed,
+			types.StackStatusDeleteFailed,
+			types.StackStatusUpdateFailed,
+			types.StackStatusUpdateRollbackFailed,
+			types.StackStatusImportRollbackFailed,
 		)
 	}
 	return filters

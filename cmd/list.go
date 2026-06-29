@@ -19,6 +19,7 @@ var (
 	filterComplete   bool
 	filterDeleted    bool
 	filterInProgress bool
+	filterFailed     bool
 	ignoreCase       bool
 	nameFilter       string
 	descContains     string
@@ -65,6 +66,7 @@ Examples:
 	cmd.Flags().BoolVarP(&filterComplete, "complete", "C", false, "Filter complete stacks (*_COMPLETE statuses)")
 	cmd.Flags().BoolVarP(&filterDeleted, "deleted", "D", false, "Filter deleted stacks (DELETE_* statuses)")
 	cmd.Flags().BoolVarP(&filterInProgress, "in-progress", "P", false, "Filter in-progress stacks (*_IN_PROGRESS statuses)")
+	cmd.Flags().BoolVarP(&filterFailed, "failed", "F", false, "Filter failed stacks (*_FAILED statuses)")
 	cmd.Flags().BoolVarP(&ignoreCase, "ignore-case", "i", false, "Use case-insensitive matching for text filters")
 	cmd.Flags().StringVar(&descContains, "desc", "", "Filter stacks whose description contains this string")
 	cmd.Flags().StringVar(&descNotContains, "no-desc", "", "Exclude stacks whose description contains this string")
@@ -90,8 +92,8 @@ func runList(cmd *cobra.Command, args []string) {
 	isResourceSearch := resourceType != "" || resourceName != "" || len(properties) > 0
 
 	// For resource search, default to all stacks unless user specifies status filters
-	statusFilters := buildStatusFilters(filterAll, filterComplete, filterDeleted, filterInProgress)
-	if isResourceSearch && !filterAll && !filterComplete && !filterDeleted && !filterInProgress {
+	statusFilters := buildStatusFilters(filterAll, filterComplete, filterDeleted, filterInProgress, filterFailed)
+	if isResourceSearch && !filterAll && !filterComplete && !filterDeleted && !filterInProgress && !filterFailed {
 		// No status filters specified and doing resource search - search all stacks (including DELETE_COMPLETE)
 		statusFilters = nil
 	}

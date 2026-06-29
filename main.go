@@ -39,6 +39,8 @@ func main() {
 		cmd.TailCmd(),
 		cmd.TemplateCmd(),
 		cmd.ValidateCmd(),
+		cmd.ContinueRollbackCmd(),
+		cmd.FixCmd(),
 		cmd.GenDocsCmd(rootCmd),
 	)
 

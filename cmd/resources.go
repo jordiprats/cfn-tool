@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -11,18 +12,24 @@ import (
 )
 
 func ResourcesCmd() *cobra.Command {
-	return &cobra.Command{
+	var failedOnly bool
+
+	cmd := &cobra.Command{
 		Use:     "resources <stack-name>",
 		Aliases: []string{"res"},
 		Short:   "List physical resources in a CloudFormation stack",
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			runResources(args[0])
+			runResources(args[0], failedOnly)
 		},
 	}
+
+	cmd.Flags().BoolVarP(&failedOnly, "failed", "f", false, "Show only resources in *_FAILED status")
+
+	return cmd
 }
 
-func runResources(stackName string) {
+func runResources(stackName string, failedOnly bool) {
 	ctx := context.Background()
 	client := mustClient(ctx)
 
@@ -37,6 +44,16 @@ func runResources(stackName string) {
 			fatalf("failed to list resources for stack %q: %v\n", stackName, err)
 		}
 		all = append(all, output.StackResourceSummaries...)
+	}
+
+	if failedOnly {
+		var filtered []types.StackResourceSummary
+		for _, r := range all {
+			if strings.HasSuffix(string(r.ResourceStatus), "_FAILED") {
+				filtered = append(filtered, r)
+			}
+		}
+		all = filtered
 	}
 
 	if len(all) == 0 {
