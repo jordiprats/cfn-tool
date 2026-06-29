@@ -150,6 +150,43 @@ func runFix(stackName string, roleARN string, drift bool) {
 	fmt.Fprintf(os.Stderr, "Attempting continue-update-rollback on parent stack %s...\n", stackName)
 	fixContinueRollback(ctx, client, stackName, roleARN)
 
+	// Fixing the parent may re-break inner stacks — fix them again if needed
+	for _, scRes := range scResources {
+		ppID := getValue(scRes.PhysicalResourceId)
+		if ppID == "" {
+			continue
+		}
+		innerStacks, err := listStacks(ctx, client, nil, ppID, "", "", false)
+		if err != nil {
+			continue
+		}
+		for _, s := range innerStacks {
+			if s.StackStatus != types.StackStatusUpdateRollbackFailed {
+				continue
+			}
+			innerName := getValue(s.StackName)
+			fmt.Fprintf(os.Stderr, "\nInner stack %s is stuck again, fixing...\n", innerName)
+			showFailedResources(ctx, client, innerName)
+			fmt.Fprintf(os.Stderr, "  Attempting continue-update-rollback on %s...\n", innerName)
+			success := attemptContinueRollback(ctx, client, innerName, nil, roleARN)
+			if !success {
+				failedIDs := getFailedResourceIDs(ctx, client, innerName)
+				if len(failedIDs) == 0 {
+					fmt.Fprintf(os.Stderr, "  Failed and no skippable resources found.\n")
+					continue
+				}
+				fmt.Fprintf(os.Stderr, "  Retrying, skipping: %s\n", strings.Join(failedIDs, ", "))
+				success = attemptContinueRollback(ctx, client, innerName, failedIDs, roleARN)
+				if !success {
+					fmt.Fprintf(os.Stderr, "  Failed even after skipping.\n")
+				}
+			}
+			if success {
+				fmt.Fprintf(os.Stderr, "  Inner stack %s rolled back successfully.\n", innerName)
+			}
+		}
+	}
+
 	// Show final status of all stacks
 	fmt.Fprintf(os.Stderr, "\nFinal stack status:\n")
 	printStackStatus(ctx, client, stackName)
