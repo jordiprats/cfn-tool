@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -30,6 +33,7 @@ var (
 	resourceType     string
 	resourceName     string
 	properties       []string
+	watchInterval    time.Duration
 )
 
 func ListCmd() *cobra.Command {
@@ -77,6 +81,8 @@ Examples:
 	cmd.Flags().StringVarP(&resourceType, "type", "t", "", "Search for resource type (e.g., AWS::S3::Bucket)")
 	cmd.Flags().StringVarP(&resourceName, "resource-name", "n", "", "Search for resource logical ID")
 	cmd.Flags().StringArrayVarP(&properties, "property", "p", []string{}, "Search for resource property (format: key=value or nested.key=value)")
+	cmd.Flags().DurationVarP(&watchInterval, "watch", "w", 0, "Watch mode: refresh every interval (default 30s, e.g. -w 5s)")
+	cmd.Flags().Lookup("watch").NoOptDefVal = "30s"
 
 	return cmd
 }
@@ -98,6 +104,58 @@ func runList(cmd *cobra.Command, args []string) {
 	if isResourceSearch && !filterAll && !filterComplete && !filterDeleted && !filterInProgress && !filterFailed && !filterRollback {
 		// No status filters specified and doing resource search - search all stacks (including DELETE_COMPLETE)
 		statusFilters = nil
+	}
+
+	if watchInterval > 0 {
+		if !isTTY() {
+			fatalf("--watch requires an interactive terminal\n")
+		}
+
+		collect := func() []types.StackSummary {
+			s, err := listStacks(ctx, client, statusFilters, nameFilter, descContains, descNotContains, ignoreCase)
+			if err != nil {
+				return nil
+			}
+			if sortUpdated {
+				sort.Slice(s, func(i, j int) bool {
+					return stackLastUpdated(s[i]).After(stackLastUpdated(s[j]))
+				})
+			}
+			return s
+		}
+
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+		effectiveInterval := watchInterval
+		for {
+			start := time.Now()
+			stacks := collect()
+			elapsed := time.Since(start)
+
+			clearScreen()
+			fmt.Printf("Every %s: cfn list (last: %s)\n\n", effectiveInterval, time.Now().Format("15:04:05"))
+			if len(stacks) == 0 {
+				fmt.Println("No stacks found")
+			} else {
+				printStacks(noHeaders, stacks, sortUpdated)
+			}
+
+			nextInterval := watchInterval
+			if twice := 2 * elapsed; twice > nextInterval {
+				nextInterval = twice
+			}
+			effectiveInterval = nextInterval
+
+			timer := time.NewTimer(nextInterval)
+			select {
+			case <-sigCh:
+				timer.Stop()
+				fmt.Println()
+				return
+			case <-timer.C:
+			}
+		}
 	}
 
 	stacks, err := listStacks(ctx, client, statusFilters, nameFilter, descContains, descNotContains, ignoreCase)

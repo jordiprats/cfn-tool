@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -280,11 +282,18 @@ func stackLastUpdated(stack types.StackSummary) time.Time {
 }
 
 func printStacks(noHdrs bool, stacks []types.StackSummary, showUpdated bool) {
-	columns := []string{"NAME", "STATUS", "CREATED", "DESCRIPTION"}
-	if showUpdated {
-		columns = []string{"NAME", "STATUS", "UPDATED", "DESCRIPTION"}
+	var buf bytes.Buffer
+	w := tabwriter.NewWriter(&buf, 0, 4, 3, ' ', 0)
+
+	if !noHdrs {
+		if showUpdated {
+			fmt.Fprintln(w, "NAME\tSTATUS\tUPDATED\tDESCRIPTION")
+		} else {
+			fmt.Fprintln(w, "NAME\tSTATUS\tCREATED\tDESCRIPTION")
+		}
 	}
-	table := makeTable(columns)
+
+	var statusColors []string
 	for _, stack := range stacks {
 		ts := ""
 		if showUpdated {
@@ -295,19 +304,30 @@ func printStacks(noHdrs bool, stacks []types.StackSummary, showUpdated bool) {
 		} else if stack.CreationTime != nil {
 			ts = stack.CreationTime.Format("2006-01-02 15:04:05")
 		}
-		table.Rows = append(table.Rows, v1.TableRow{
-			Cells: []interface{}{
-				getValue(stack.StackName),
-				string(stack.StackStatus),
-				ts,
-				getValue(stack.TemplateDescription),
-			},
-		})
+
+		plain := string(stack.StackStatus)
+		colored := colorize(plain, colorForCFStatus(plain))
+		statusColors = append(statusColors, colored)
+
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+			getValue(stack.StackName),
+			plain,
+			ts,
+			getValue(stack.TemplateDescription),
+		)
 	}
-	printer := printers.NewTablePrinter(printers.PrintOptions{NoHeaders: noHdrs})
-	if err := printer.PrintObj(table, os.Stdout); err != nil {
-		fatalf("error printing table: %v\n", err)
+	w.Flush()
+
+	output := buf.String()
+	if isTTY() {
+		output = applyLineColors(output, statusColors, !noHdrs)
+		if !noHdrs {
+			if i := strings.Index(output, "\n"); i >= 0 {
+				output = colorBold + output[:i] + colorReset + output[i:]
+			}
+		}
 	}
+	fmt.Fprint(os.Stdout, output)
 }
 
 func printEvents(noHdrs bool, events []types.StackEvent) {
@@ -331,6 +351,87 @@ func printEvents(noHdrs bool, events []types.StackEvent) {
 	if err := printer.PrintObj(table, os.Stdout); err != nil {
 		fatalf("error printing table: %v\n", err)
 	}
+}
+
+const (
+	colorReset   = "\033[0m"
+	colorBold    = "\033[1m"
+	colorRed     = "\033[31m"
+	colorGreen   = "\033[32m"
+	colorYellow  = "\033[33m"
+	colorMagenta = "\033[35m"
+)
+
+func clearScreen() {
+	fmt.Print("\033[2J\033[H")
+}
+
+func isTTY() bool {
+	fi, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return (fi.Mode() & os.ModeCharDevice) != 0
+}
+
+func colorize(text, color string) string {
+	if !isTTY() {
+		return text
+	}
+	return color + text + colorReset
+}
+
+func colorForCFStatus(status string) string {
+	s := strings.ToUpper(status)
+	switch {
+	case strings.HasSuffix(s, "_COMPLETE") && !strings.HasPrefix(s, "DELETE") && !strings.HasPrefix(s, "ROLLBACK"):
+		return colorGreen
+	case strings.HasSuffix(s, "_IN_PROGRESS"):
+		return colorYellow
+	case strings.HasSuffix(s, "_FAILED"), strings.HasPrefix(s, "ROLLBACK"):
+		return colorRed
+	case strings.HasPrefix(s, "DELETE"):
+		return colorMagenta
+	default:
+		return ""
+	}
+}
+
+// applyLineColors replaces plain status text with ANSI-colored versions after tabwriter
+// has already calculated column widths. hasHeader offsets the row index by 1 to skip
+// the header line.
+func applyLineColors(output string, statusColors []string, hasHeader bool) string {
+	lines := strings.Split(output, "\n")
+	offset := 0
+	if hasHeader {
+		offset = 1
+	}
+	for i, colored := range statusColors {
+		lineIdx := i + offset
+		if lineIdx < len(lines) {
+			plain := extractPlain(colored)
+			lines[lineIdx] = strings.Replace(lines[lineIdx], plain, colored, 1)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func extractPlain(s string) string {
+	var out strings.Builder
+	i := 0
+	for i < len(s) {
+		if s[i] == '\033' && i+1 < len(s) && s[i+1] == '[' {
+			j := i + 2
+			for j < len(s) && s[j] != 'm' {
+				j++
+			}
+			i = j + 1
+			continue
+		}
+		out.WriteByte(s[i])
+		i++
+	}
+	return out.String()
 }
 
 func getValue(s *string) string {
