@@ -333,6 +333,18 @@ func printEvents(noHdrs bool, events []types.StackEvent) {
 	}
 }
 
+func clearScreen() {
+	fmt.Print("\033[2J\033[H")
+}
+
+func isTTY() bool {
+	fi, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return (fi.Mode() & os.ModeCharDevice) != 0
+}
+
 func getValue(s *string) string {
 	if s == nil {
 		return ""
