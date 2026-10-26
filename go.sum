@@ -14,8 +14,8 @@ github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.7 h1:7NS6kqBjkWIN8P/AEdm
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.7/go.mod h1:1PFqtAUsIgF1nEVojzRJSf/v88zjzqrGW+w+UAtkXyQ=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.7 h1:wYu55QUHARwu9YzeuY5yEJUTsIu8ahkmp1l3QmbzHn8=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.7/go.mod h1:OteEkhFAgFwQtZft/3myWo3tVWxdAo7cwV+7AbcpAtQ=
-github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.5 h1:4bZ3PjKoQVAFWI2Y3yZCtGHDsYB4BxcUuNOorQzyzWk=
-github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.5/go.mod h1:ifUlSY/GqxWigO1QC2VQx6QDmXmyUZ15O+svBQXRSEk=
+github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.6 h1:6JDNKnul5AvN6i1xcrrRQ6To/Swtrs0FwyvRhTnDEWg=
+github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.6/go.mod h1:OwSbF/eX8Y6ScF85DQNuVAEXqot0PT+J1TxQfD5L55s=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.82.1 h1:sVRr9yWco8Ylj+YkOwobROt1ra4GfKD1HDYJrrRP2/w=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.82.1/go.mod h1:0zom4vEU9kCbiQGvMzLPw4j54I7Q6fUOUi1f8NLRFsc=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.22 h1:qHfXn1Tm2Rh8kic/DvdKaiSVlHQRSr5C+rMuBR29D44=
