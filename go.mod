@@ -7,7 +7,7 @@ require github.com/aws/aws-sdk-go-v2/service/cloudformation v1.82.2
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.5
 	github.com/aws/aws-sdk-go-v2/config v1.33.12
-	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.6
+	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.8
 	github.com/aws/smithy-go v1.28.7
 	github.com/spf13/cobra v1.10.2
 	gopkg.in/yaml.v3 v3.0.1
