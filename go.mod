@@ -2,7 +2,7 @@ module cfn
 
 go 1.26.0
 
-require github.com/aws/aws-sdk-go-v2/service/cloudformation v1.84.0
+require github.com/aws/aws-sdk-go-v2/service/cloudformation v1.86.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
